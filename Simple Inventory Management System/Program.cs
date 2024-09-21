@@ -5,10 +5,11 @@
         public static IInventory inventory;
         static void Main(string[] args)
         {
+
             inventory = new Inventory();
 
             while (true)
-            { 
+            {
                 Console.WriteLine("\nWelcome to Simple Inventory Management System");
                 Console.WriteLine("1. Add Product");
                 Console.WriteLine("2. Edit Product");
@@ -20,7 +21,8 @@
 
                 var choice = Console.ReadLine();
 
-                if (int.TryParse(choice, out int result)){
+                if (int.TryParse(choice, out int result))
+                {
                     switch (result)
                     {
                         case 1:
@@ -44,32 +46,21 @@
                             Console.WriteLine("Invalid choice");
                             break;
                     }
-                }else{
+                }
+                else
+                {
                     Console.WriteLine("Invalid choice");
                 }
-                
+
             }
         }
         static void AddProduct()
         {
-            Console.Write("Enter Product Name: ");
-            var name = Console.ReadLine();
-            Console.Write("Enter Product Price: ");
-            var price = Console.ReadLine();
-            Console.Write("Enter Product Quantity: ");
-            var quantity = Console.ReadLine();
-            inventory.AddProduct(new Product { Name = name, Price = double.Parse(price), Quantity = int.Parse(quantity) });
-
+            inventory.AddProduct(ReadProduct());
         }
         static void EditProduct()
         {
-            Console.Write("Enter Product Name: ");
-            var name = Console.ReadLine();
-            Console.Write("Enter Product Price: ");
-            var price = Console.ReadLine();
-            Console.Write("Enter Product Quantity: ");
-            var quantity = Console.ReadLine();
-            inventory.editProduct(new Product { Name = name, Price = double.Parse(price), Quantity = int.Parse(quantity) });
+            inventory.editProduct(ReadProduct());
         }
         static void DeleteProduct()
         {
@@ -82,7 +73,7 @@
             Console.WriteLine();
             foreach (var product in inventory.ListProducts())
             {
-                Console.WriteLine($"Name: {product.Name}, Price: {product.Price}, Quantity: {product.Quantity}");
+                Console.WriteLine(product);
             }
         }
         static void SearchProduct()
@@ -93,13 +84,34 @@
             if (product != null)
             {
                 Console.WriteLine();
-                Console.WriteLine($"Name: {product.Name}, Price: {product.Price}, Quantity: {product.Quantity}");
+                Console.WriteLine(product);
             }
             else
             {
                 Console.WriteLine();
                 Console.WriteLine("Product not found");
             }
+        }
+        static Product ReadProduct()
+        {
+
+            Console.Write("Enter Product Name: ");
+            var name = Console.ReadLine();
+            Console.Write("Enter Product Price: ");
+            var priceText = Console.ReadLine();
+            double price;
+            Double.TryParse(priceText, out price);
+            Console.Write("Enter Product Quantity: ");
+            var quantityText = Console.ReadLine();
+            int quantity;
+            int.TryParse(quantityText, out quantity);
+
+            return new Product
+            {
+                Name = name,
+                Price = price,
+                Quantity = quantity
+            };
         }
     }
 }
