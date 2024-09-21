@@ -1,47 +1,158 @@
-﻿
-using System.Collections.Generic;
+﻿using System.Data.SqlClient;
 
 namespace Simple_Inventory_Management_System
 {
     internal class Inventory : IInventory
-    {   
-        private Dictionary<string, Product> products = new Dictionary<string, Product>();
+    {
+        SqlConnection sqlConnection;
+        public Inventory()
+        {
+            sqlConnection = GetConnection();
+
+        }
+
+        private SqlConnection GetConnection()
+        {
+            Console.WriteLine("Getting Connection... ");
+            string dataSourse = @"(localdb)\wasim";
+            string DBName = "Inventory Management";
+            string connString = $"Data Source={dataSourse};" +
+                $"Initial Catalog={DBName};Integrated Security=True";
+            SqlConnection sqlConnection = new SqlConnection(connString);
+
+            try
+            {
+                Console.WriteLine("Open Connection... ");
+                sqlConnection.Open();
+                Console.WriteLine("Connectiion Successful");
+                return sqlConnection;
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error: {e.Message}");
+                //End the program
+                Environment.Exit(1);
+                return null;
+            }
+        }
+
 
         public void AddProduct(Product input)
         {
-            if (products.ContainsKey(input.Name))
+            var product = searchProduct(input.Name);
+
+            if (product is not null)
             {
-                products[input.Name].Quantity += input.Quantity;
-            }else
-            {
-                products.Add(input.Name, input);
+                product.Quantity += input.Quantity;
+                editProduct(product);
             }
+            else
+            {
+                var qurey = "INSERT INTO Products (Name, Price, Quantity) " +
+                            "VALUES (@Name, @Price, @Quantity)";
+                using (var sqlCommand = new SqlCommand(qurey, sqlConnection))
+                {
+                    sqlCommand.Parameters.AddWithValue("@Name", input.Name);
+                    sqlCommand.Parameters.AddWithValue("@Price", input.Price);
+                    sqlCommand.Parameters.AddWithValue("@Quantity", input.Quantity);
+
+                    sqlCommand.ExecuteNonQuery();
+                    Console.WriteLine($"\nInserted {input.Name}");
+                }
+            }
+
         }
 
         public void deleteProduct(string input)
         {
-            if(products.ContainsKey(input))
+            var product = searchProduct(input);
+
+            if (product is not null)
             {
-                products.Remove(input);
+                string query = "DELETE FROM Products WHERE Name = @Name";
+                using (var sqlCommand = new SqlCommand(query, sqlConnection))
+                {
+                    sqlCommand.Parameters.AddWithValue("@Name", input);
+                    sqlCommand.ExecuteNonQuery();
+                    Console.WriteLine($"\nDeleted {input}");
+                }
             }
             else
             {
-                Console.WriteLine("Product not found");
+                Console.WriteLine("\nProduct not found");
             }
         }
 
         public void editProduct(Product input)
         {
-            if (products.ContainsKey(input.Name))
+            var product = searchProduct(input.Name);
+
+            if (product is not null)
             {
-                products[input.Name] = input;
+                string query = "UPDATE Products SET Price = @Price, Quantity = @Quantity WHERE Name = @Name";
+                using (var sqlCommand = new SqlCommand(query, sqlConnection))
+                {
+                    sqlCommand.Parameters.AddWithValue("@Name", input.Name);
+                    sqlCommand.Parameters.AddWithValue("@Price", input.Price);
+                    sqlCommand.Parameters.AddWithValue("@Quantity", input.Quantity);
+
+                    sqlCommand.ExecuteNonQuery();
+                    Console.WriteLine($"\nUpdated {input.Name}");
+                }
             }
         }
 
-        public IEnumerable<Product> ListProducts() => products.Values;
+        public IEnumerable<Product> ListProducts()
+        {
+
+            string query = "SELECT * FROM Products";
+            using (var command = new SqlCommand(query, sqlConnection))
+            {
+                using (var reader = command.ExecuteReader())
+                {
+                    var products = new List<Product>();
+                    while (reader.Read())
+                    {
+                        var product = new Product
+                        {
+                            Name = reader.GetString(1),
+                            Price = reader.GetDouble(2),
+                            Quantity = reader.GetInt32(3)
+                        };
+                        products.Add(product);
+
+                    }
+                    return products;
+                }
+            }
+
+        }
 
 
-        public Product? searchProduct(string input) => products.ContainsKey(input) ? products[input] : null;
-
+        public Product? searchProduct(string input)
+        {
+            string query = "SELECT * FROM Products WHERE Name = @Name";
+            using (var sqlCommand = new SqlCommand(query, sqlConnection))
+            {
+                sqlCommand.Parameters.AddWithValue("@Name", input);
+                using (var reader = sqlCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new Product
+                        {
+                            Name = reader.GetString(1),
+                            Price = reader.GetDouble(2),
+                            Quantity = reader.GetInt32(3)
+                        };
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+            }
+        }
     }
 }
